@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, selectinfunc, func
+from sqlalchemy import select, func
 from typing import List, Optional, Dict, Any
 
 from app.database.base import Base

@@ -7,9 +7,12 @@ from app.schemas.user import UserCreate, UserLogin, UserRead
 from app.models.user import User
 from app.core.security import create_access_token, SECRET_KEY, ALGORITHM
 from jose import jwt, JWTError
+from passlib.context import CryptContext
 from datetime import timedelta
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 @router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
@@ -18,23 +21,30 @@ async def register(
     session: AsyncSession = Depends(get_session),
 ) -> UserRead:
     """Register a new user."""
-    from passlib.context import CryptContext
-    pwd_context = CryptContext(schemes=["auto"], deprecated="auto")
+    from app.repositories.user_repository import UserRepository
+    user_repo = UserRepository(session)
     
-    existing_user = await session.get(User, None)  # Placeholder
-    # TODO: Check if user exists with same email
+    # Check if user already exists
+    existing_user = await user_repo.get_by_email(user_data.email)
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered",
+        )
     
     hashed_password = pwd_context.hash(user_data.password)
-    # TODO: Create user in database
-    # new_user = User(email=user_data.email, hashed_password=hashed_password)
-    # session.add(new_user)
-    # await session.commit()
-    # await session.refresh(new_user)
+    user = await user_repo.create(
+        email=user_data.email, hashed_password=hashed_password
+    )
     
-    # TODO: Generate token
-    # access_token = create_access_token(subject=new_user.email)
-    
-    return UserRead(id=1, email=user_data.email, is_active=True, is_superuser=False, created_at=None)
+    access_token = create_access_token(subject=user.email)
+    return UserRead(
+        id=user.id,
+        email=user.email,
+        is_active=user.is_active,
+        is_superuser=user.is_superuser,
+        created_at=user.created_at,
+    )
 
 
 @router.post("/login", response_model=Dict[str, str])
@@ -43,15 +53,16 @@ async def login(
     session: AsyncSession = Depends(get_session),
 ) -> Dict[str, str]:
     """Login and get JWT token."""
-    # TODO: Verify credentials
-    # user = await session.execute(select(User).where(User.email == user_data.email))
-    # user = user.scalar_one_or_none()
-    # if not user or not pwd_context.verify(user_data.password, user.hashed_password):
-    #     raise HTTPException(
-    #         status_code=status.HTTP_401_UNAUTHORIZED,
-    #         detail="Incorrect email or password",
-    #         headers={"WWW-Authenticate": "Bearer"},
-    #     )
+    from app.repositories.user_repository import UserRepository
+    user_repo = UserRepository(session)
     
-    access_token = create_access_token(subject=user_data.email)
+    user = await user_repo.get_by_email(user_data.email)
+    if not user or not pwd_context.verify(user_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    access_token = create_access_token(subject=user.email)
     return {"access_token": access_token, "token_type": "bearer"}

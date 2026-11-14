@@ -3,7 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Dict, Any
 
 from app.database.session import get_session
-from app.models.title import Title
+from app.repositories.title_repository import TitleRepository
+from app.schemas.title import TitleRead
 
 router = APIRouter(prefix="/search", tags=["Search"])
 

@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from app.models.title import Title
 from app.repositories.title_repository import TitleRepository

@@ -8,7 +8,7 @@ from app.schemas.user import UserCreate, UserLogin
 from app.core.security import create_access_token
 from passlib.context import CryptContext
 
-pwd_context = CryptContext(schemes=["auto"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class AuthService:

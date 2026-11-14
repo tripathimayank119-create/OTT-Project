@@ -20,8 +20,28 @@ async def create_title(
 ) -> TitleRead:
     """Create a new title (movie/TV show)."""
     repo = TitleRepository(session)
-    title = await repo.create(title_data.dict(exclude={"genre_ids", "platform_ids"}))
-    # TODO: Handle genre and platform relationships
+    # Create title without genre/platform IDs first, then handle relationships
+    title_dict = title_data.dict(exclude={"genre_ids", "platform_ids"})
+    title = await repo.create(title_dict)
+    
+    # Handle genre relationships if provided
+    if title_data.genre_ids:
+        from sqlalchemy import select
+        for genre_id in title_data.genre_ids:
+            genre = await session.get(Genre, genre_id)
+            if genre:
+                title.genre.append(genre)
+    
+    # Handle platform relationships if provided
+    if title_data.platform_ids:
+        from sqlalchemy import select
+        for platform_id in title_data.platform_ids:
+            platform = await session.get(Platform, platform_id)
+            if platform:
+                title.platform.append(platform)
+    
+    await session.flush()
+    await session.refresh(title)
     return title
 
 

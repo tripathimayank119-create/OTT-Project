@@ -12,16 +12,24 @@ config = context.config
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    try:
+        fileConfig(config.config_file_name)
+    except KeyError:
+        # Python 3.13 compatibility: configure logging manually
+        import logging
+
+        logging.basicConfig(level=logging.WARN)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
 import sys
 import os
 
-sys.path.insert(0, os.path.dirname(__file__) + '/../..')
+# Add project root to path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 from app.database.base import Base
 
