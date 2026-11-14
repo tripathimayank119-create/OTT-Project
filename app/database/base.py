@@ -1,8 +1,8 @@
-from sqlalchemy.ext.declarative import as_declarative
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, ForeignKey
-from sqlalchemy.orm import relationship
-from datetime import datetime
 
-@as_declarative()
-class Base:
+from sqlalchemy.orm import DeclarativeBase
+
+
+class Base(DeclarativeBase):
+    """Shared SQLAlchemy base for all database models."""
+
     pass
