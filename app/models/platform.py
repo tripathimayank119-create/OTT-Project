@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime
+from sqlalchemy import Column, Integer, String, Text, DateTime, Index
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database.base import Base
@@ -14,3 +14,7 @@ class Platform(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     titles = relationship("Title", back_populates="platform")
+
+    __table_args__ = (
+        Index("ix_platforms_slug", "slug"),
+    )
