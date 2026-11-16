@@ -33,8 +33,12 @@ async def get_current_user(
     except JWTError:
         raise credentials_exception
     
-    # TODO: Fetch user from database
-    return {"id": user_id, "email": "user@example.com"}
+    from app.repositories.user_repository import UserRepository
+    user_repo = UserRepository(session)
+    user = await user_repo.get_by_id(int(user_id))
+    if not user:
+        raise credentials_exception
+    return {"id": str(user.id), "email": user.email}
 
 async def get_optional_current_user(
     token: Optional[str] = Depends(oauth2_scheme),
