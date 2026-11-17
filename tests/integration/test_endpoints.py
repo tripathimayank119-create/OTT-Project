@@ -17,8 +17,7 @@ class TestAuthEndpoints:
                 "/api/v1/auth/register",
                 json={"email": "test@example.com", "password": "testpassword123"},
             )
-            # Endpoint should exist and return appropriate status code
-            # 404 is acceptable - endpoint exists but no data in test database
+            # Endpoint should exist (404 acceptable - no database, 400 for bad request)
             assert response.status_code in [200, 201, 400, 422, 404]
             # Response should be JSON
             assert response.headers.get("content-type", "").startswith("application/json")
@@ -35,8 +34,7 @@ class TestAuthEndpoints:
                 "/api/v1/auth/login",
                 json={"email": "test@example.com", "password": "testpassword123"},
             )
-            # Endpoint should exist and return appropriate status code
-            # 404 is acceptable - endpoint exists but no data in test database
+            # Endpoint should exist (404 acceptable - no database, 401 for invalid creds)
             assert response.status_code in [200, 401, 422, 404]
             assert response.headers.get("content-type", "").startswith("application/json")
         finally:
@@ -77,7 +75,7 @@ class TestTitleEndpoints:
                     "duration_minutes": 120,
                 },
             )
-            # Endpoint should exist (404 acceptable - no database)
+            # Endpoint should exist (404 acceptable - no database, 400 for bad request)
             assert response.status_code in [200, 201, 400, 422, 404]
             assert response.headers.get("content-type", "").startswith("application/json")
         finally:

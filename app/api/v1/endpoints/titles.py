@@ -6,7 +6,8 @@ from app.database.session import get_session
 from app.models.title import Title, Genre, Platform
 from app.schemas.title import TitleRead, TitleCreate, TitleUpdate, GenreRead, PlatformRead
 from app.repositories.title_repository import TitleRepository
-from app.repositories.user_repository import UserRepository
+from app.schemas.user import UserCreate
+from app.utils.pagination import PaginationParams
 
 router = APIRouter(prefix="/titles", tags=["Titles"])
 
@@ -47,13 +48,12 @@ async def create_title(
 
 @router.get("/", response_model=List[TitleRead])
 async def list_titles(
+    pagination: PaginationParams = Depends(),
     session: AsyncSession = Depends(get_session),
-    skip: int = 0,
-    limit: int = 100,
 ) -> List[TitleRead]:
     """List all titles with pagination."""
     repo = TitleRepository(session)
-    titles = await repo.get_all(skip=skip, limit=limit)
+    titles = await repo.get_all(skip=pagination.skip, limit=pagination.limit)
     return titles
 
 
