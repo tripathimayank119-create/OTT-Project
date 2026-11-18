@@ -1,33 +1,33 @@
+
 from fastapi import APIRouter
 
-# Authentication router
-auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
+from app.api.v1.endpoints import (
+    auth,
+    users,
+    titles,
+    genres,
+    platforms,
+    sync,
+)
 
-# Users router
-users_router = APIRouter(prefix="/users", tags=["Users"])
 
-# Titles router
-titles_router = APIRouter(prefix="/titles", tags=["Titles"])
+api_router = APIRouter()
 
-# Genres router
-genres_router = APIRouter(prefix="/genres", tags=["Genres"])
 
-# Platforms router
-platforms_router = APIRouter(prefix="/platforms", tags=["Platforms"])
+# Authentication
+api_router.include_router(auth.router)
 
-# Search router
-search_router = APIRouter(prefix="/search", tags=["Search"])
+# User Management
+api_router.include_router(users.router)
 
-# Sync router
-sync_router = APIRouter(prefix="/sync", tags=["Background"])
+# OTT Catalogue
+api_router.include_router(titles.router)
+api_router.include_router(genres.router)
+api_router.include_router(platforms.router)
 
-# Register all routers at api/v1 level
+# Background Catalogue Synchronization
+api_router.include_router(sync.router)
+
+
 def include_routers(app):
-    """Include all API routers into the FastAPI app."""
-    app.include_router(auth_router)
-    app.include_router(users_router)
-    app.include_router(titles_router)
-    app.include_router(genres_router)
-    app.include_router(platforms_router)
-    app.include_router(search_router)
-    app.include_router(sync_router)
+    app.include_router(api_router)

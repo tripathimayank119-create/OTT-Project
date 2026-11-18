@@ -1,31 +1,56 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from typing import List, Optional, Dict, Any
 
-from app.database.base import Base
+from typing import List, Optional
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
 from app.models.title import Title, Genre, Platform
 
 
 class TitleRepository:
+    """Database operations for OTT titles."""
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.model = Title
 
+    async def create(self, data: dict) -> Title:
+        """Create and persist a new title."""
+        title = Title(**data)
+        self.session.add(title)
+        await self.session.flush()
+        await self.session.refresh(title)
+        return title
+
     async def get_by_id(self, title_id: int) -> Optional[Title]:
-        """Get title by ID."""
+        """Retrieve a title by ID with its relationships."""
         result = await self.session.execute(
-            select(self.model).where(self.model.id == title_id)
+            select(Title)
+            .options(
+                selectinload(Title.genres),
+                selectinload(Title.platforms),
+            )
+            .where(Title.id == title_id)
         )
         return result.scalar_one_or_none()
 
     async def get_all(
-        self, skip: int = 0, limit: int = 100
+        self,
+        skip: int = 0,
+        limit: int = 100,
     ) -> List[Title]:
-        """Get all titles with pagination."""
+        """Retrieve titles with pagination."""
         result = await self.session.execute(
-            select(self.model).offset(skip).limit(limit)
+            select(Title)
+            .options(
+                selectinload(Title.genres),
+                selectinload(Title.platforms),
+            )
+            .offset(skip)
+            .limit(limit)
         )
-        return result.scalars().all()
+        return list(result.scalars().all())
 
     async def search(
         self,
@@ -34,33 +59,54 @@ class TitleRepository:
         platform_id: Optional[int] = None,
         release_year: Optional[int] = None,
     ) -> List[Title]:
-        """Search titles with filters."""
-        stmt = select(self.model)
-        
+        """Search titles using optional filters."""
+        stmt = select(Title).options(
+            selectinload(Title.genres),
+            selectinload(Title.platforms),
+        )
+
         if query:
+            pattern = f"%{query}%"
             stmt = stmt.where(
-                self.model.title.ilike(f"%{query}%")
-                | self.model.original_title.ilike(f"%{query}%")
+                Title.title.ilike(pattern)
+                | Title.original_title.ilike(pattern)
             )
-        
+
         if genre_id is not None:
-            stmt = stmt.join(self.model.genre).where(Genre.id == genre_id)
-        
+            stmt = stmt.join(Title.genres).where(
+                Genre.id == genre_id
+            )
+
         if platform_id is not None:
-            stmt = stmt.join(self.model.platform).where(Platform.id == platform_id)
-        
+            stmt = stmt.join(Title.platforms).where(
+                Platform.id == platform_id
+            )
+
         if release_year is not None:
-            stmt = stmt.where(self.model.release_year == release_year)
-        
+            stmt = stmt.where(
+                Title.release_year == release_year
+            )
+
+        stmt = stmt.distinct()
+
         result = await self.session.execute(stmt)
-        return result.scalars().all()
+        return list(result.scalars().unique().all())
 
     async def get_genres(self) -> List[Genre]:
-        """Get all genres."""
-        result = await self.session.execute(select(Genre))
-        return result.scalars().all()
+        """Retrieve all genres."""
+        result = await self.session.execute(
+            select(Genre).order_by(Genre.name)
+        )
+        return list(result.scalars().all())
 
     async def get_platforms(self) -> List[Platform]:
-        """Get all platforms."""
-        result = await self.session.execute(select(Platform))
-        return result.scalars().all()
+        """Retrieve all OTT platforms."""
+        result = await self.session.execute(
+            select(Platform).order_by(Platform.name)
+        )
+        return list(result.scalars().all())
+
+    async def delete(self, title: Title) -> None:
+        """Delete a title."""
+        await self.session.delete(title)
+        await self.session.flush()

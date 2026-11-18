@@ -1,22 +1,26 @@
-"""initial migration
+
+"""Initial database migration.
 
 Revision ID: 20261114_initial
-Revises: 
+Revises:
 Create Date: 2026-11-14 00:00:00
-
 """
+
 from alembic import op
 import sqlalchemy as sa
 
 
-# revision identifiers, used by Alembic.
+# Revision identifiers
 revision = "20261114_initial"
 down_revision = None
 branch_labels = None
-depends_on_table = None
+depends_on = None
 
 
 def upgrade() -> None:
+    """Create the initial database tables."""
+
+    # Users table
     op.create_table(
         "users",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -29,6 +33,8 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("email", name="uix_email"),
     )
+
+    # Genres table
     op.create_table(
         "genres",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -38,7 +44,8 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("name", name="ix_genres_name"),
     )
-    op.create_index("ix_genres_name", "genres", ["name"], unique=True)
+
+    # Platforms table
     op.create_table(
         "platforms",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -49,7 +56,8 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("slug", name="ix_platforms_slug"),
     )
-    op.create_index("ix_platforms_slug", "platforms", ["slug"], unique=True)
+
+    # Titles table
     op.create_table(
         "titles",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -68,9 +76,30 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["platform_id"], ["platforms.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index("ix_titles_title", "titles", ["title"], unique=False)
-    op.create_index("ix_titles_release_year", "titles", ["release_year"], unique=False)
-    op.create_index("ix_titles_is_featured", "titles", ["is_featured"], unique=False)
+
+    # Title indexes
+    op.create_index(
+        "ix_titles_title",
+        "titles",
+        ["title"],
+        unique=False,
+    )
+
+    op.create_index(
+        "ix_titles_release_year",
+        "titles",
+        ["release_year"],
+        unique=False,
+    )
+
+    op.create_index(
+        "ix_titles_is_featured",
+        "titles",
+        ["is_featured"],
+        unique=False,
+    )
+
+    # Title-genre association table
     op.create_table(
         "title_genres",
         sa.Column("title_id", sa.Integer(), nullable=False),
@@ -82,13 +111,26 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Remove the initial database tables."""
+
     op.drop_table("title_genres")
-    op.drop_index("ix_titles_is_featured", table_name="titles")
-    op.drop_index("ix_titles_release_year", table_name="titles")
-    op.drop_index("ix_titles_title", table_name="titles")
+
+    op.drop_index(
+        "ix_titles_is_featured",
+        table_name="titles",
+    )
+
+    op.drop_index(
+        "ix_titles_release_year",
+        table_name="titles",
+    )
+
+    op.drop_index(
+        "ix_titles_title",
+        table_name="titles",
+    )
+
     op.drop_table("titles")
-    op.drop_index("ix_platforms_slug", table_name="platforms")
     op.drop_table("platforms")
-    op.drop_index("ix_genres_name", table_name="genres")
     op.drop_table("genres")
     op.drop_table("users")
