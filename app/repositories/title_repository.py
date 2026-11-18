@@ -54,6 +54,46 @@ class TitleRepository:
         
         result = await self.session.execute(stmt)
         return result.scalars().all()
+    
+    async def search_advanced(
+        self,
+        query: str = "",
+        genre_id: Optional[int] = None,
+        platform_id: Optional[int] = None,
+        release_year_min: Optional[int] = None,
+        release_year_max: Optional[int] = None,
+        rating_min: Optional[float] = None,
+        rating_max: Optional[float] = None,
+    ) -> List[Title]:
+        """Advanced search with multiple filters."""
+        stmt = select(self.model)
+        
+        if query:
+            stmt = stmt.where(
+                self.model.title.ilike(f"%{query}%")
+                | self.model.original_title.ilike(f"%{query}%")
+            )
+        
+        if genre_id is not None:
+            stmt = stmt.join(self.model.genre).where(Genre.id == genre_id)
+        
+        if platform_id is not None:
+            stmt = stmt.join(self.model.platform).where(Platform.id == platform_id)
+        
+        if release_year_min is not None:
+            stmt = stmt.where(self.model.release_year >= release_year_min)
+        
+        if release_year_max is not None:
+            stmt = stmt.where(self.model.release_year <= release_year_max)
+        
+        if rating_min is not None:
+            stmt = stmt.where(self.model.rating >= rating_min)
+        
+        if rating_max is not None:
+            stmt = stmt.where(self.model.rating <= rating_max)
+        
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
 
     async def get_genres(self) -> List[Genre]:
         """Get all genres."""

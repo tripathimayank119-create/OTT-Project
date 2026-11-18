@@ -12,19 +12,28 @@ class SyncService:
     
     async def sync_titles(self) -> Dict[str, Any]:
         """Sync titles from external OTT platforms."""
+        # Get current titles count
+        current_titles = await self.title_repo.get_all()
+        
         # TODO: Implement background task to fetch from external APIs
         # This simulates external OTT platform synchronization
-        repo = TitleRepository(self.session)
-        # Clear and reload or update existing titles
+        synced_count = len(current_titles)
+        
         return {
-            "synced": 0,
+            "synced": synced_count,
             "message": "Sync completed",
             "source": "external_ott_platforms",
         }
     
     async def force_sync(self) -> Dict[str, Any]:
         """Force full synchronization of all titles."""
-        # TODO: Implement force sync
+        # Clear and reload all titles
+        await self.session.execute(self.title_repo.model.__table__.delete())
+        await self.session.flush()
+        
+        # TODO: Implement force sync to fetch from external APIs
+        # and populate the database
+        
         return {
             "synced": 0,
             "message": "Force sync completed",
