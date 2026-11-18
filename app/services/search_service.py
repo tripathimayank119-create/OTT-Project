@@ -19,10 +19,9 @@ class SearchService:
         release_year_max: Optional[int] = None,
         rating_min: Optional[float] = None,
         rating_max: Optional[float] = None,
-    ) -> Dict[str, Any]:
+    ) -> List[Title]:
         """Advanced search with multiple filters."""
-        repo = TitleRepository(self.session)
-        results = await repo.search_advanced(
+        results = await self.title_repo.search_advanced(
             query=query,
             genre_id=genre_id,
             platform_id=platform_id,

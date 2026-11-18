@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from typing import Optional
+from typing import Optional, List
 
 from app.database.base import Base
 from app.models.user import User
@@ -24,3 +24,8 @@ class UserRepository:
         self.session.add(user)
         await self.session.flush()
         return user
+
+    async def get_all(self) -> List[User]:
+        """Get all users."""
+        result = await self.session.execute(select(self.model))
+        return result.scalars().all()
