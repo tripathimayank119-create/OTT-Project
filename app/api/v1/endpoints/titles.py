@@ -7,7 +7,7 @@ from app.models.title import Title, Genre, Platform
 from app.schemas.title import TitleRead, TitleCreate, TitleUpdate, GenreRead, PlatformRead
 from app.repositories.title_repository import TitleRepository
 from app.schemas.user import UserCreate
-from app.utils.pagination import PaginationParams
+from app.utils.pagination import PaginationParams, paginate
 
 router = APIRouter(prefix="/titles", tags=["Titles"])
 
@@ -43,6 +43,7 @@ async def create_title(
     
     await session.flush()
     await session.refresh(title)
+    await session.commit()
     return title
 
 

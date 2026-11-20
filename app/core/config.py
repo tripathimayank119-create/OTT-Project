@@ -6,7 +6,7 @@ class Settings(SettingsConfigDict):
     DEBUG: bool = True
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost/ott_aggregator"
     REDIS_URL: str = "redis://localhost:6379/0"
-    SECRET_KEY: str = "your-secret-key-change-in-production"
+    SECRET_KEY: str = Field(default="your-secret-key-change-in-production", alias="SECRET_KEY")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
