@@ -1,7 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 
-from app.models.title import Title, Genre, Platform
+from app.models.title import Title
+from app.models.genre import Genre
+from app.models.platform import Platform
 from app.repositories.title_repository import TitleRepository
 
 

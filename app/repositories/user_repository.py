@@ -23,6 +23,8 @@ class UserRepository:
         user = self.model(email=email, hashed_password=hashed_password)
         self.session.add(user)
         await self.session.flush()
+        await self.session.commit()
+        await self.session.refresh(user)
         return user
 
     async def get_all(self) -> List[User]:

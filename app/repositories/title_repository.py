@@ -3,7 +3,9 @@ from sqlalchemy import select, func
 from typing import List, Optional, Dict, Any
 
 from app.database.base import Base
-from app.models.title import Title, Genre, Platform
+from app.models.title import Title
+from app.models.genre import Genre
+from app.models.platform import Platform
 
 
 class TitleRepository:
