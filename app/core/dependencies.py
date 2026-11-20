@@ -27,7 +27,7 @@ async def get_current_user(
     token: Optional[str] = Depends(oauth2_scheme),
     session: AsyncSession = Depends(get_db_session),
 ):
-    """Validate JWT and retrieve the authenticated database user."""
+    """Validate JWT and retrieve the user by database ID."""
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -40,16 +40,21 @@ async def get_current_user(
 
     try:
         payload = decode_access_token(token)
-        email = payload.get("sub")
+        subject = payload.get("sub")
 
-        if not email or not isinstance(email, str):
+        if not subject:
+            raise credentials_exception
+
+        user_id = int(subject)
+
+        if user_id <= 0:
             raise credentials_exception
 
     except (JWTError, ValueError, TypeError):
         raise credentials_exception
 
     user_repo = UserRepository(session)
-    user = await user_repo.get_by_email(email)
+    user = await user_repo.get_by_id(user_id)
 
     if user is None or not user.is_active:
         raise credentials_exception

@@ -11,6 +11,8 @@ REDIS_URL = os.getenv(
     "redis://localhost:6379/0",
 )
 
+TITLE_CACHE_PATTERN = "titles:*"
+
 redis_client: Optional[Redis] = None
 
 
@@ -68,9 +70,23 @@ async def cache_delete(key: str):
 
 
 async def cache_clear():
+    """Delete only this application's title-list cache entries."""
     try:
         client = await get_redis()
-        await client.flushdb()
+        keys = []
+
+        async for key in client.scan_iter(
+            match=TITLE_CACHE_PATTERN,
+            count=100,
+        ):
+            keys.append(key)
+
+            if len(keys) >= 100:
+                await client.delete(*keys)
+                keys.clear()
+
+        if keys:
+            await client.delete(*keys)
 
     except Exception:
         pass
