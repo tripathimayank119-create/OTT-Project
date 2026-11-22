@@ -6,12 +6,14 @@ from app.database.base import Base
 from app.models.title import Title
 from app.models.genre import Genre
 from app.models.platform import Platform
+from app.services.cache_service import CacheService
 
 
 class TitleRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
         self.model = Title
+        self.cache = CacheService()
 
     async def get_by_id(self, title_id: int) -> Optional[Title]:
         """Get title by ID."""
@@ -36,7 +38,13 @@ class TitleRepository:
         platform_id: Optional[int] = None,
         release_year: Optional[int] = None,
     ) -> List[Title]:
-        """Search titles with filters."""
+        """Search titles with filters and cache support."""
+        cache_key = f"search:{query}:{genre_id}:{platform_id}:{release_year}"
+        cached = await self.cache.get(cache_key)
+        if cached:
+            ids = [int(tid) for tid in cached.split(",") if tid]
+            return [Title(id=tid) for tid in ids] if ids else []
+        
         stmt = select(self.model)
         
         if query:
@@ -55,7 +63,10 @@ class TitleRepository:
             stmt = stmt.where(self.model.release_year == release_year)
         
         result = await self.session.execute(stmt)
-        return result.scalars().all()
+        titles = result.scalars().all()
+        
+        await self.cache.set(cache_key, ",".join(str(t.id) for t in titles), expire_seconds=300)
+        return titles
     
     async def search_advanced(
         self,
