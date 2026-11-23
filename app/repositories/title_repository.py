@@ -17,10 +17,18 @@ class TitleRepository:
 
     async def get_by_id(self, title_id: int) -> Optional[Title]:
         """Get title by ID."""
+        cache_key = f"title:{title_id}"
+        cached = await self.cache.get(cache_key)
+        if cached:
+            from app.schemas.title import TitleRead
+            return TitleRead.model_validate_json(cached)
         result = await self.session.execute(
             select(self.model).where(self.model.id == title_id)
         )
-        return result.scalar_one_or_none()
+        title = result.scalar_one_or_none()
+        if title:
+            await self.cache.set(cache_key, title.model_dump_json(), expire_seconds=300)
+        return title
 
     async def get_all(
         self, skip: int = 0, limit: int = 100
@@ -45,7 +53,7 @@ class TitleRepository:
             ids = [int(tid) for tid in cached.split(",") if tid]
             return [Title(id=tid) for tid in ids] if ids else []
         
-        stmt = select(self.model)
+        stmt = select(self.model).options(selectinload(self.model.genre), selectinload(self.model.platform))
         
         if query:
             stmt = stmt.where(
@@ -63,10 +71,36 @@ class TitleRepository:
             stmt = stmt.where(self.model.release_year == release_year)
         
         result = await self.session.execute(stmt)
-        titles = result.scalars().all()
+        titles = result.scalars().unique().all()
         
         await self.cache.set(cache_key, ",".join(str(t.id) for t in titles), expire_seconds=300)
         return titles
+    
+    async def create(self, title_data: Dict[str, Any]) -> Title:
+        """Create a new title and invalidate search cache."""
+        # Invalidate search caches since the dataset changed
+        await self.cache.invalidate("search:*")
+        title = self.model(**title_data)
+        self.session.add(title)
+        await self.session.flush()
+        await self.cache.set(f"title:{title.id}", title.model_dump_json(), expire_seconds=300)
+        return title
+
+    async def update(self, title_id: int, title_data: Dict[str, Any]) -> Optional[Title]:
+        """Update a title and invalidate relevant caches."""
+        # Invalidate cache for this title and search caches
+        await self.cache.invalidate(f"title:{title_id}")
+        await self.cache.invalidate("search:*")
+        result = await self.session.execute(
+            select(self.model).where(self.model.id == title_id)
+        )
+        title = result.scalar_one_or_none()
+        if title:
+            for key, value in title_data.items():
+                setattr(title, key, value)
+            await self.session.flush()
+            await self.cache.set(f"title:{title.id}", title.model_dump_json(), expire_seconds=300)
+        return title
     
     async def search_advanced(
         self,
