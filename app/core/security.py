@@ -1,9 +1,8 @@
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from typing import Optional
-from app.core.config import Settings
+from app.core.config import settings
 
-settings = Settings()
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
